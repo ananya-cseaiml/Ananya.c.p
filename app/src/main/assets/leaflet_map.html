@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>FloodSafe Bengaluru - Real Live Interactive Map</title>
+  <link rel="stylesheet" href="leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    /* Popups */
+    .custom-popup .leaflet-popup-content-wrapper {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.2);
+      padding: 4px;
+    }
+    .custom-popup .leaflet-popup-tip {
+      background: #ffffff;
+    }
+    .popup-title {
+      font-weight: 800;
+      font-size: 14px;
+      color: #0f172a;
+      margin-bottom: 5px;
+      line-height: 1.3;
+    }
+    .popup-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+    }
+    .badge-safe { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .badge-watch { background: #fef9c3; color: #a16207; border: 1px solid #fde047; }
+    .badge-high { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+    .badge-severe { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .popup-row {
+      font-size: 12px;
+      margin: 4px 0;
+      color: #475569;
+    }
+    .popup-row b {
+      color: #0f172a;
+    }
+    .popup-action-btn {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #1d4ed8;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      display: block;
+    }
+    .popup-action-btn:hover {
+      background: #dbeafe;
+    }
+
+    /* Radar Pulse Exact Location Beacon */
+    .user-location-wrap {
+      position: relative;
+      width: 40px;
+      height: 40px;
+    }
+    .user-location-pulse {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 40px;
+      background: rgba(37, 99, 235, 0.4);
+      border-radius: 50%;
+      animation: user-radar 2s infinite ease-out;
+      pointer-events: none;
+    }
+    .user-location-core {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 20px;
+      height: 20px;
+      background: #2563eb;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.8), 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+    @keyframes user-radar {
+      0% {
+        transform: scale(0.35);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2.4);
+        opacity: 0;
+      }
+    }
+
+    /* Recenter Button */
+    .recenter-btn {
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      border: 2px solid #3b82f6;
+      border-radius: 50%;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      color: #2563eb;
+      transition: all 0.2s ease;
+    }
+    .recenter-btn:active {
+      transform: scale(0.92);
+      background: #eff6ff;
+    }
+
+    /* Map Legend */
+    .layer-legend {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+      font-size: 11px;
+      line-height: 19px;
+      max-width: 210px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Layer Controls Styling */
+    .leaflet-control-layers {
+      border-radius: 12px !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+    }
+  </style>
+  <script src="leaflet.js"></script>
+  <script>
+    if (typeof L === 'undefined') {
+      document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\\/script>');
+    }
+  </script>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    // Pilot Center: Bellandur - Agara, Bengaluru
+    const DEFAULT_LAT = 12.9254;
+    const DEFAULT_LNG = 77.6740;
+
+    let currentGpsLat = DEFAULT_LAT;
+    let currentGpsLng = DEFAULT_LNG;
+    let userMarker = null;
+    let accuracyCircle = null;
+    let hasCenteredOnce = false;
+
+    // Initialize Map with zoom control enabled
+    const map = L.map('map', {
+      center: [DEFAULT_LAT, DEFAULT_LNG],
+      zoom: 15,
+      zoomControl: true,
+      preferCanvas: true
+    });
+
+    // 1. Real Base Tile Layers
+    // OpenStreetMap Standard
+    const osmLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    });
+
+    // CartoDB Voyager (Crisp, clean streets & labels)
+    const cartoLayer = L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; CartoDB &copy; OpenStreetMap'
+    }).addTo(map); // Default active base layer
+
+    // Real Satellite Imagery (Esri World Imagery)
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics'
+    });
+
+    // Topographic Terrain (OpenTopoMap)
+    const topoLayer = L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17,
+      attribution: 'Map data: &copy; OpenStreetMap, SRTM | Map style: &copy; OpenTopoMap'
+    });
+
+    // Feature Layers
+    const floodRiskLayer = L.layerGroup().addTo(map);
+    const roadsLayer = L.layerGroup().addTo(map);
+    const drainageLayer = L.layerGroup().addTo(map);
+    const waterBodiesLayer = L.layerGroup().addTo(map);
+    const vulnerablePointsLayer = L.layerGroup().addTo(map);
+    const routeLayer = L.layerGroup().addTo(map);
+    const gpsLayer = L.layerGroup().addTo(map);
+
+    // Layer Switcher Control
+    const baseMaps = {
+      "✨ Street Map (Carto)": cartoLayer,
+      "🗺️ OpenStreetMap": osmLayer,
+      "🛰️ Real Satellite Imagery": satelliteLayer,
+      "🏔️ Topo Terrain (Contours)": topoLayer
+    };
+
+    const overlayMaps = {
+      "📍 Exact Location": gpsLayer,
+      "🌊 Flood Risk Heatspots": floodRiskLayer,
+      "🛣️ Road Passability": roadsLayer,
+      "⚡ Storm Drains (Rajakaluve)": drainageLayer,
+      "💧 Lakes & Basins": waterBodiesLayer,
+      "⚠️ Critical Hotspots": vulnerablePointsLayer,
+      "🚗 Nav Routes": routeLayer
+    };
+
+    L.control.layers(baseMaps, overlayMaps, { position: 'topright', collapsed: true }).addTo(map);
+
+    function getSeverityColor(sev) {
+      switch(sev) {
+        case 'SAFE': return '#16a34a';
+        case 'WATCH': return '#ca8a04';
+        case 'HIGH': return '#ea580c';
+        case 'SEVERE': return '#dc2626';
+        default: return '#2563eb';
+      }
+    }
+
+    // Preloaded Bellandur-Agara Real Water Bodies
+    const WATER_BODIES = [
+      {
+        name: "Bellandur Lake",
+        coords: [
+          [12.9340, 77.6620], [12.9420, 77.6680], [12.9410, 77.6800],
+          [12.9320, 77.6840], [12.9270, 77.6740], [12.9340, 77.6620]
+        ],
+        desc: "Largest urban wetland in Bengaluru; major runoff collection sink for Koramangala & Challaghatta valleys."
+      },
+      {
+        name: "Agara Lake",
+        coords: [
+          [12.9210, 77.6470], [12.9260, 77.6530], [12.9230, 77.6590],
+          [12.9180, 77.6540], [12.9210, 77.6470]
+        ],
+        desc: "Upstream cascading lake basin with flood weir regulating discharge toward Bellandur."
+      }
+    ];
+
+    WATER_BODIES.forEach(wb => {
+      L.polygon(wb.coords, {
+        color: '#0284c7',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.4,
+        weight: 2
+      }).bindPopup(`
+        <div class="custom-popup">
+          <div class="popup-title">💧 ${wb.name}</div>
+          <div class="popup-row">${wb.desc}</div>
+        </div>
+      `).addTo(waterBodiesLayer);
+    });
+
+    // Primary Stormwater Drainage (Rajakaluves)
+    const DRAINS = [
+      {
+        name: "Agara-Bellandur Primary Rajakaluve (Trunk SWD)",
+        coords: [[12.9215, 77.6560], [12.9245, 77.6640], [12.9290, 77.6710], [12.9325, 77.6750]],
+        type: "Primary Trunk Drain",
+        capacity: "32 m³/s",
+        stress: "78%"
+      },
+      {
+        name: "Koramangala Valley Feeder Drain",
+        coords: [[12.9350, 77.6480], [12.9335, 77.6580], [12.9340, 77.6660]],
+        type: "Secondary Arterial Drain",
+        capacity: "18 m³/s",
+        stress: "65%"
+      },
+      {
+        name: "Outer Ring Road Marginal Drain (EcoSpace Culvert)",
+        coords: [[12.9255, 77.6715], [12.9275, 77.6795], [12.9295, 77.6880]],
+        type: "Roadside Storm Drain",
+        capacity: "12 m³/s",
+        stress: "88% (Bottleneck near EcoSpace)"
+      }
+    ];
+
+    DRAINS.forEach(d => {
+      L.polyline(d.coords, {
+        color: '#06b6d4',
+        weight: 4,
+        dashArray: '6, 6'
+      }).bindPopup(`
+        <div class="custom-popup">
+          <div class="popup-title">🌊 ${d.name}</div>
+          <div class="popup-row"><b>Classification:</b> ${d.type}</div>
+          <div class="popup-row"><b>Discharge Capacity:</b> ${d.capacity}</div>
+          <div class="popup-row"><b>Hydraulic Stress:</b> ${d.stress}</div>
+        </div>
+      `).addTo(drainageLayer);
+    });
+
+    // Vulnerable Locations / Hotspots
+    const VULNERABLE_LOCATIONS = [
+      {
+        id: "loc_ecospace",
+        name: "Outer Ring Road - EcoSpace Depression",
+        lat: 12.9278,
+        lng: 77.6820,
+        risk: 74,
+        severity: "HIGH",
+        predTime: "30-60 min",
+        conf: 84,
+        why: "Culvert capacity deficit + runoff accumulation from Sarjapur ridge",
+        action: "Deploy dewatering pumps; divert traffic to inner bypass"
+      },
+      {
+        id: "loc_agara_junc",
+        name: "Agara Junction Low Point",
+        lat: 12.9248,
+        lng: 77.6515,
+        risk: 42,
+        severity: "WATCH",
+        predTime: "45-60 min",
+        conf: 78,
+        why: "Depression bowl receiving runoff from HSR Sector 1",
+        action: "Monitor sump pump operation; ensure grating cleared"
+      },
+      {
+        id: "loc_rainbow_drive",
+        name: "Rainbow Drive / Sarjapur Road Bottleneck",
+        lat: 12.9160,
+        lng: 77.6890,
+        risk: 86,
+        severity: "SEVERE",
+        predTime: "15-30 min",
+        conf: 91,
+        why: "Severe drain encroachment + historical depression basin accumulation",
+        action: "Deploy quick-deployment barrier & high-capacity pump"
+      },
+      {
+        id: "loc_ibblur",
+        name: "Ibblur Junction / Sun City Sump",
+        lat: 12.9220,
+        lng: 77.6690,
+        risk: 58,
+        severity: "WATCH",
+        predTime: "30-45 min",
+        conf: 80,
+        why: "Agara lake overflow feeder confluence",
+        action: "Clear debris screen at inlet"
+      },
+      {
+        id: "loc_bellandur_gate",
+        name: "Bellandur Gate - Main Road",
+        lat: 12.9330,
+        lng: 77.6710,
+        risk: 28,
+        severity: "SAFE",
+        predTime: "+120 min",
+        conf: 85,
+        why: "Elevated road crest with active gravity discharge",
+        action: "Maintain standard observation"
+      }
+    ];
+
+    function renderLocations(locations) {
+      vulnerablePointsLayer.clearLayers();
+      locations.forEach(loc => {
+        const color = getSeverityColor(loc.severity);
+        const marker = L.circleMarker([loc.lat, loc.lng], {
+          radius: 11,
+          color: '#ffffff',
+          fillColor: color,
+          fillOpacity: 0.9,
+          weight: 2.5
+        }).addTo(vulnerablePointsLayer);
+
+        marker.bindPopup(`
+          <div class="custom-popup">
+            <div class="popup-title">📍 ${loc.name}</div>
+            <span class="popup-badge badge-${loc.severity.toLowerCase()}">${loc.severity} • ${loc.risk}% RISK</span>
+            <div class="popup-row"><b>Time Window:</b> ${loc.predTime} (Confidence ${loc.conf}%)</div>
+            <div class="popup-row"><b>Mechanism:</b> ${loc.why}</div>
+            <div class="popup-row"><b>Action:</b> ${loc.action}</div>
+            <div class="popup-action-btn" onclick='selectHotspotFromMap(${JSON.stringify(loc)})'>Select Hotspot</div>
+          </div>
+        `);
+
+        marker.on('click', () => {
+          if (window.Android && window.Android.onLocationSelected) {
+            window.Android.onLocationSelected(JSON.stringify(loc));
+          }
+        });
+      });
+    }
+
+    window.selectHotspotFromMap = function(loc) {
+      if (window.Android && window.Android.onLocationSelected) {
+        window.Android.onLocationSelected(JSON.stringify(loc));
+      }
+    };
+
+    renderLocations(VULNERABLE_LOCATIONS);
+
+    // Road Segments
+    const ROAD_SEGMENTS = [
+      {
+        id: "rd_orr_ecospace",
+        name: "Outer Ring Road (Agara to EcoSpace)",
+        severity: "HIGH",
+        risk: 74,
+        reasons: "ORR drainage surcharge at culvert, 18cm standing water predicted",
+        coords: [[12.9248, 77.6515], [12.9260, 77.6650], [12.9278, 77.6820]]
+      },
+      {
+        id: "rd_hsr_bypass",
+        name: "HSR Sector 1 - 14th Main Ridge Bypass",
+        severity: "SAFE",
+        risk: 18,
+        reasons: "Elevated topography (898m ASL), natural gravity drainage",
+        coords: [[12.9248, 77.6515], [12.9180, 77.6550], [12.9195, 77.6710], [12.9278, 77.6820]]
+      },
+      {
+        id: "rd_sarjapur_feeder",
+        name: "Sarjapur Road - Ibblur Link",
+        severity: "SEVERE",
+        risk: 86,
+        reasons: "Direct drain overflow; 32cm impassable inundation",
+        coords: [[12.9160, 77.6890], [12.9220, 77.6690]]
+      }
+    ];
+
+    function renderRoads(roads) {
+      roadsLayer.clearLayers();
+      roads.forEach(r => {
+        const color = getSeverityColor(r.severity);
+        L.polyline(r.coords, {
+          color: color,
+          weight: 6,
+          opacity: 0.85
+        }).bindPopup(`
+          <div class="custom-popup">
+            <div class="popup-title">🛣️ ${r.name}</div>
+            <span class="popup-badge badge-${r.severity.toLowerCase()}">${r.severity} • ${r.risk}% RISK</span>
+            <div class="popup-row"><b>Condition:</b> ${r.reasons}</div>
+          </div>
+        `).on('click', () => {
+          if (window.Android && window.Android.onRoadSelected) {
+            window.Android.onRoadSelected(JSON.stringify(r));
+          }
+        }).addTo(roadsLayer);
+      });
+    }
+
+    renderRoads(ROAD_SEGMENTS);
+
+    // ==========================================
+    // EXACT REAL LOCATION ENGINE
+    // ==========================================
+    const userLocationIcon = L.divIcon({
+      className: 'user-location-wrap',
+      html: '<div class="user-location-pulse"></div><div class="user-location-core"></div>',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20]
+    });
+
+    window.updateGpsPosition = function(lat, lng, heading) {
+      currentGpsLat = parseFloat(lat);
+      currentGpsLng = parseFloat(lng);
+
+      gpsLayer.clearLayers();
+
+      // GPS Accuracy Radius Circle
+      accuracyCircle = L.circle([currentGpsLat, currentGpsLng], {
+        radius: 35,
+        color: '#2563eb',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.18,
+        weight: 1.5
+      }).addTo(gpsLayer);
+
+      // Radar Pulse Marker
+      userMarker = L.marker([currentGpsLat, currentGpsLng], {
+        icon: userLocationIcon,
+        zIndexOffset: 2000
+      }).addTo(gpsLayer);
+
+      // Dynamic Popup on Exact Location
+      userMarker.bindPopup(`
+        <div class="custom-popup">
+          <div class="popup-title" style="color:#1d4ed8; display:flex; align-items:center; gap:6px;">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2563eb;box-shadow:0 0 6px #2563eb;"></span>
+            <b>YOUR EXACT LOCATION</b>
+          </div>
+          <div class="popup-row"><b>Latitude:</b> ${currentGpsLat.toFixed(5)}° N</div>
+          <div class="popup-row"><b>Longitude:</b> ${currentGpsLng.toFixed(5)}° E</div>
+          <div class="popup-row"><b>Telemetry:</b> <span style="color:#16a34a;font-weight:800;">🟢 Live Real-Time Fix</span></div>
+          <div class="popup-row"><b>Catchment:</b> Bellandur–Agara Pilot Basin</div>
+          <div class="popup-action-btn" onclick="window.recenterToUser()">🎯 Center Exactly Here</div>
+        </div>
+      `);
+
+      // Center map on location when first received
+      if (!hasCenteredOnce) {
+        map.setView([currentGpsLat, currentGpsLng], 15, { animate: true });
+        hasCenteredOnce = true;
+      }
+    };
+
+    // Recenter Map Smoothly to User's Exact Location
+    window.recenterToUser = function() {
+      if (currentGpsLat && currentGpsLng) {
+        map.flyTo([currentGpsLat, currentGpsLng], 16, {
+          animate: true,
+          duration: 1.2
+        });
+        if (userMarker) {
+          setTimeout(() => { userMarker.openPopup(); }, 800);
+        }
+      }
+    };
+
+    // Add Recenter Button Control on the Map
+    const RecenterControl = L.Control.extend({
+      options: { position: 'bottomright' },
+      onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-bar');
+        const btn = L.DomUtil.create('button', 'recenter-btn', container);
+        btn.innerHTML = '🎯';
+        btn.title = 'Center to My Exact Location';
+        btn.onclick = function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          window.recenterToUser();
+        };
+        return container;
+      }
+    });
+    map.addControl(new RecenterControl());
+
+    // Map Click Listener to inspect any real location coordinates
+    map.on('click', function(e) {
+      const clickLat = e.latlng.lat;
+      const clickLng = e.latlng.lng;
+      L.popup()
+        .setLatLng(e.latlng)
+        .setContent(`
+          <div class="custom-popup">
+            <div class="popup-title">📍 Selected Map Coordinates</div>
+            <div class="popup-row"><b>Lat:</b> ${clickLat.toFixed(5)}° N</div>
+            <div class="popup-row"><b>Lng:</b> ${clickLng.toFixed(5)}° E</div>
+            <div class="popup-row"><b>Area:</b> Bellandur Catchment</div>
+            <div class="popup-action-btn" onclick="window.recenterToUser()">Return to My Location</div>
+          </div>
+        `)
+        .openOn(map);
+    });
+
+    // Draw route lines: fastest & safer
+    window.displayRoutes = function(routesJson) {
+      routeLayer.clearLayers();
+      try {
+        const routes = JSON.parse(routesJson);
+        routes.forEach(rt => {
+          const isSafer = rt.type === 'SAFER';
+          const line = L.polyline(rt.coords, {
+            color: isSafer ? '#10b981' : '#f43f5e',
+            weight: isSafer ? 6 : 4,
+            dashArray: isSafer ? null : '8, 8',
+            opacity: 0.9
+          }).addTo(routeLayer);
+
+          line.bindPopup(`
+            <div class="custom-popup">
+              <div class="popup-title">${isSafer ? '🛡️ SAFER ROUTE' : '⚡ FASTEST ROUTE'}</div>
+              <div class="popup-row"><b>Time:</b> ${rt.time}</div>
+              <div class="popup-row"><b>Distance:</b> ${rt.distance}</div>
+              <div class="popup-row"><b>Flood Risk:</b> ${rt.risk}%</div>
+              <div class="popup-row"><b>Risky Segments:</b> ${rt.riskySegments}</div>
+              <div class="popup-action-btn">${rt.recommendation}</div>
+            </div>
+          `);
+        });
+
+        // Fit bounds around routes
+        const allCoords = routes.flatMap(r => r.coords);
+        if (allCoords.length > 0) {
+          map.fitBounds(L.latLngBounds(allCoords), { padding: [40, 40] });
+        }
+      } catch(e) {
+        console.error("Error displaying routes", e);
+      }
+    };
+
+    // Layer Toggle API for Android interface
+    window.toggleLayer = function(layerName, visible) {
+      const layers = {
+        'floodRisk': floodRiskLayer,
+        'roads': roadsLayer,
+        'drainage': drainageLayer,
+        'waterBodies': waterBodiesLayer,
+        'vulnerable': vulnerablePointsLayer,
+        'gps': gpsLayer
+      };
+      const l = layers[layerName];
+      if (l) {
+        if (visible && !map.hasLayer(l)) map.addLayer(l);
+        if (!visible && map.hasLayer(l)) map.removeLayer(l);
+      }
+    };
+
+    // Bottom-left Legend
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function() {
+      const div = L.DomUtil.create('div', 'layer-legend');
+      div.innerHTML = `
+        <div style="font-weight:800; margin-bottom:4px; color:#1e40af;">Bengaluru Flood Model</div>
+        <div class="legend-item"><span class="legend-color" style="background:#16a34a"></span> SAFE (0–30%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#ca8a04"></span> WATCH (31–60%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#ea580c"></span> HIGH (61–80%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> SEVERE (81–100%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#06b6d4"></span> Storm Drain (Rajakaluve)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#2563eb; border-radius:50%"></span> Exact Real Location</div>
+      `;
+      return div;
+    };
+    legend.addTo(map);
+
+    // Initialize with default location immediately
+    window.updateGpsPosition(DEFAULT_LAT, DEFAULT_LNG, 0);
+  </script>
+</body>
+</html>

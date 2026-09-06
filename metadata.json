@@ -1,0 +1,6 @@
+{
+  "name": "FloodSafe Bengaluru",
+  "description": "AI-Based Urban Flood Nowcasting & Flood-Safe Navigation System for Bellandur–Agara, Bengaluru",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
