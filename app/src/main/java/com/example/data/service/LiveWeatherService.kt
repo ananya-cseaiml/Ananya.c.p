@@ -54,11 +54,10 @@ class LiveWeatherService {
             // Real Open-Meteo API query with past 24 hours and 12 forecast hours
             val url = "https://api.open-meteo.com/v1/forecast?latitude=$targetLat&longitude=$targetLng&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m&hourly=precipitation,rain&past_hours=24&forecast_hours=12&timezone=Asia%2FKolkata"
             val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-
-            if (response.isSuccessful) {
-                val body = response.body?.string() ?: ""
-                val json = JSONObject(body)
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: ""
+                    val json = JSONObject(body)
 
                 val current = json.optJSONObject("current")
                 val rainCurrent = current?.optDouble("rain", current.optDouble("precipitation", 0.0)) ?: 0.0
@@ -165,6 +164,7 @@ class LiveWeatherService {
                     lastUpdated = "Unavailable"
                 )
             }
+        }
         } catch (e: Exception) {
             LiveWeatherResult(
                 rainfallMmHr = 0.0,

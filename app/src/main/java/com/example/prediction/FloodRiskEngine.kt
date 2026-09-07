@@ -187,6 +187,39 @@ class FloodRiskEngine(
     }
 
     /**
+     * Calculates static baseline terrain/hydrological susceptibility independent of real-time storm events
+     */
+    fun calculateBaselineSusceptibility(
+        elevationMeters: Double,
+        slopePercent: Double,
+        flowAccumulationIndex: Int,
+        isVulnerableHotspot: Boolean
+    ): Int {
+        val terrainScore = calculateTerrainScore(elevationMeters, slopePercent)
+        val flowAccScore = calculateFlowAccumulationScore(flowAccumulationIndex)
+        val historicalScore = calculateHistoricalScore(if (isVulnerableHotspot) 4 else 1)
+        val totalWeight = terrainWeight + flowAccumulationWeight + historicalWeight
+        if (totalWeight <= 0f) return 30
+        val weighted = (terrainScore * terrainWeight + flowAccScore * flowAccumulationWeight + historicalScore * historicalWeight) / totalWeight
+        return weighted.toInt().coerceIn(5, 95)
+    }
+
+    /**
+     * Calculates dynamic storm event risk driven by real-time precipitation and conduit surcharge
+     */
+    fun calculateDynamicRisk(
+        rainfallScore: Int,
+        antecedentScore: Int,
+        drainageScore: Int,
+        waterLevelScore: Int
+    ): Int {
+        val totalWeight = rainfallWeight + antecedentWeight + drainageWeight + waterLevelWeight
+        if (totalWeight <= 0f) return 30
+        val weighted = (rainfallScore * rainfallWeight + antecedentScore * antecedentWeight + drainageScore * drainageWeight + waterLevelScore * waterLevelWeight) / totalWeight
+        return weighted.toInt().coerceIn(5, 99)
+    }
+
+    /**
      * Evaluates comprehensive location risk
      */
     fun evaluateLocationRisk(
@@ -209,6 +242,19 @@ class FloodRiskEngine(
         val waterLevelScore = calculateWaterLevelScore(waterLevelMeters, dangerLevelMeters)
         val historicalScore = calculateHistoricalScore(if (location.isVulnerableHotspot) 4 else 1)
 
+        val baselineSusceptibility = calculateBaselineSusceptibility(
+            location.elevationMeters,
+            location.slopePercent,
+            location.flowAccumulationIndex,
+            location.isVulnerableHotspot
+        )
+        val dynamicRisk = calculateDynamicRisk(
+            rainfallScore = rainfallScore,
+            antecedentScore = antecedentScore,
+            drainageScore = drainageScore,
+            waterLevelScore = waterLevelScore
+        )
+
         val finalPercentage = calculateFinalRisk(
             rainfallScore = rainfallScore,
             antecedentScore = antecedentScore,
@@ -228,6 +274,20 @@ class FloodRiskEngine(
         if (drainageScore > 65) reasons.add("Severe drainage loading and culvert surcharge ($drainageStressPercent%)")
         if (waterLevelScore > 75) reasons.add("Receiving water body near overflow danger mark (${waterLevelMeters}m)")
         if (reasons.isEmpty()) reasons.add("Normal baseline parameters; clear drainage camber")
+
+        val detailedWhy = buildString {
+            append("${location.name} (${location.elevationMeters}m ASL): ")
+            if (rainfallScore > 50) {
+                append("Precipitation intensity (${currentRainfallMmHr.toInt()} mm/hr) generates rapid overland runoff. ")
+            }
+            if (drainageScore > 65) {
+                append("SWD conduit surcharge ($drainageStressPercent% hydraulic loading) throttles gravity discharge. ")
+            }
+            if (location.elevationMeters <= 875.0) {
+                append("Low depression topography acts as a catchment runoff sink. ")
+            }
+            append("Baseline susceptibility is $baselineSusceptibility%, with dynamic storm risk reaching $dynamicRisk%.")
+        }
 
         val contributingFactors = listOf(
             FactorBreakdown("Rainfall & Intensity", rainfallScore, rainfallWeight, "${currentRainfallMmHr.toInt()} mm/hr over ${rainfallDurationMin}m"),
@@ -254,7 +314,10 @@ class FloodRiskEngine(
             reasons = reasons,
             contributingFactors = contributingFactors,
             dataStatus = dataStatus,
-            modelVersion = modelVersion
+            modelVersion = modelVersion,
+            baselineSusceptibilityPercent = baselineSusceptibility,
+            dynamicRiskPercent = dynamicRisk,
+            detailedWhyExplanation = detailedWhy
         )
     }
 

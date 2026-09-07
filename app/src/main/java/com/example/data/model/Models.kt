@@ -15,6 +15,16 @@ enum class RiskLevel(val label: String) {
                 else -> SEVERE
             }
         }
+
+        fun fromString(name: String?): RiskLevel {
+            return when (name?.uppercase()?.trim()) {
+                "SAFE" -> SAFE
+                "WATCH", "MODERATE" -> WATCH
+                "HIGH" -> HIGH
+                "SEVERE", "CRITICAL" -> SEVERE
+                else -> HIGH
+            }
+        }
     }
 }
 
@@ -43,7 +53,10 @@ data class RiskCalculationResult(
     val reasons: List<String>,
     val contributingFactors: List<FactorBreakdown>,
     val dataStatus: DataStatus,
-    val modelVersion: String = "v1.4.2-baseline-drainage-coupled"
+    val modelVersion: String = "v1.4.2-baseline-drainage-coupled",
+    val baselineSusceptibilityPercent: Int = 35,
+    val dynamicRiskPercent: Int = riskPercentage,
+    val detailedWhyExplanation: String = ""
 )
 
 data class LocationInfo(
@@ -165,8 +178,15 @@ data class ValidationMetrics(
     val averageLeadTimeMinutes: Int,
     val verifiedEventsCount: Int,
     val isDemo: Boolean = true,
-    val hasSufficientData: Boolean = true,
-    val notice: String = "Synthetic/demo validation data. Insufficient real-world verified sensor records."
+    val hasSufficientData: Boolean = false,
+    val notice: String = if (isDemo) "Validation pending verified ground-truth data." else "Real-world validation derived dynamically from local verified event database.",
+    val f1ScorePercent: Double = if (precisionPercent + recallPercent > 0) {
+        Math.round((2 * precisionPercent * recallPercent / (precisionPercent + recallPercent)) * 10.0) / 10.0
+    } else 0.0,
+    val statusLabel: String = if (isDemo) "DEMO SCENARIO — NOT VALIDATION" else "Validation pending verified ground-truth data.",
+    val spatialValidationStatus: String = "Bellandur–Agara Basin pilot mesh (Ward 150 & 174)",
+    val temporalValidationStatus: String = "15-min hyetograph resolution, 15–120m nowcast lead time",
+    val groundTruthDataSource: String = "KSNDMC Automatic Weather Stations & BBMP Sump Gauging Records"
 )
 
 data class DataSourceStatus(

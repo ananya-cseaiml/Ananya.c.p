@@ -63,7 +63,7 @@ fun ValidationScreen(
             )
         }
 
-        // Two Tabs: DEMO VALIDATION and REAL VALIDATION
+        // Two Tabs: DEMO SCENARIOS and FIELD GROUND-TRUTH
         item {
             TabRow(
                 selectedTabIndex = selectedTab,
@@ -75,7 +75,7 @@ fun ValidationScreen(
                     onClick = { selectedTab = 0 },
                     text = {
                         Text(
-                            "DEMO VALIDATION",
+                            "DEMO SCENARIOS",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (selectedTab == 0) CyanAccent else TextSecondary
@@ -88,7 +88,7 @@ fun ValidationScreen(
                     onClick = { selectedTab = 1 },
                     text = {
                         Text(
-                            "REAL VALIDATION",
+                            "FIELD GROUND-TRUTH",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (selectedTab == 1) CyanAccent else TextSecondary
@@ -99,156 +99,207 @@ fun ValidationScreen(
             }
         }
 
-        // Scientific Honesty Notice Box
+        // Scientific Honesty Notice Box & Label
         item {
             Card(
-                colors = CardDefaults.cardColors(containerColor = if (activeMetrics.hasSufficientData) WatchAmberBg else SevereRedBg),
+                colors = CardDefaults.cardColors(containerColor = if (selectedTab == 0) WatchAmberBg else SevereRedBg),
                 shape = RoundedCornerShape(10.dp),
                 border = CardDefaults.outlinedCardBorder().copy(
                     brush = Brush.horizontalGradient(
                         listOf(
-                            if (activeMetrics.hasSufficientData) WatchAmberDark else SevereRedDark,
-                            if (activeMetrics.hasSufficientData) WatchAmber else SevereRed
+                            if (selectedTab == 0) WatchAmberDark else SevereRedDark,
+                            if (selectedTab == 0) WatchAmber else SevereRed
                         )
                     )
                 )
             ) {
-                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (activeMetrics.hasSufficientData) Icons.Default.Info else Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = if (activeMetrics.hasSufficientData) WatchAmber else SevereRed,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (selectedTab == 0) Icons.Default.Info else Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = if (selectedTab == 0) WatchAmber else SevereRed,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (selectedTab == 0) "DEMO SCENARIO — NOT VALIDATION" else "VALIDATION STATUS",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (selectedTab == 0) WatchAmber else SevereRed,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = activeMetrics.notice,
-                        fontSize = 11.sp,
+                        text = if (selectedTab == 0) {
+                            "Synthetic simulation mode. Validation pending verified ground-truth data."
+                        } else {
+                            "Validation pending verified ground-truth data. Operational validation requires high-density ultrasonic water level IoT telemetry and field log calibration."
+                        },
+                        fontSize = 12.sp,
                         color = TextPrimary,
-                        lineHeight = 15.sp
+                        lineHeight = 16.sp
                     )
                 }
             }
         }
 
-        if (!activeMetrics.hasSufficientData) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = NavySurface),
-                    shape = RoundedCornerShape(12.dp),
-                    border = CardDefaults.outlinedCardBorder().copy(brush = Brush.horizontalGradient(listOf(NavyBorder, SevereRedDark)))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Insufficient real-world validation data",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SevereRed
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Scientific Honesty Directive: Operational real-world validation requires high-density ultrasonic water level IoT telemetry and continuous physical storm records. Field deployment in Bellandur–Agara pilot is pending live sensor hardware telemetry.",
-                            fontSize = 12.sp,
-                            color = TextSecondary,
-                            lineHeight = 16.sp,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
+        // Validation Framework Overview Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = NavySurface),
+                shape = RoundedCornerShape(12.dp),
+                border = CardDefaults.outlinedCardBorder().copy(brush = Brush.horizontalGradient(listOf(NavyBorder, CyanAccent.copy(alpha = 0.4f))))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        "HYDROLOGICAL VALIDATION FRAMEWORK",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = CyanAccent,
+                        letterSpacing = 0.5.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Ground Truth Source:", fontSize = 11.sp, color = TextSecondary)
+                        Text("KSNDMC AWS & BBMP Telemetry", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Spatial Validation:", fontSize = 11.sp, color = TextSecondary)
+                        Text(activeMetrics.spatialValidationStatus, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Temporal Validation:", fontSize = 11.sp, color = TextSecondary)
+                        Text(activeMetrics.temporalValidationStatus, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     }
                 }
             }
-        } else {
-            // Metric Stat Cards Grid
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MetricStatCard(
-                        title = "Accuracy",
-                        value = "${activeMetrics.accuracyPercent}%",
-                        subtitle = "Overall classification",
-                        icon = Icons.Default.Analytics,
-                        iconColor = SafeGreen,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricStatCard(
-                        title = "Recall (Sensitivity)",
-                        value = "${activeMetrics.recallPercent}%",
-                        subtitle = "True positive flood hits",
-                        icon = Icons.Default.Analytics,
-                        iconColor = CyanAccent,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+        }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MetricStatCard(
-                        title = "Precision",
-                        value = "${activeMetrics.precisionPercent}%",
-                        subtitle = "Alert trustworthiness",
-                        icon = Icons.Default.Analytics,
-                        iconColor = SkyRadar,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricStatCard(
-                        title = "Lead Time",
-                        value = "${activeMetrics.averageLeadTimeMinutes} min",
-                        subtitle = "Average advance warning",
-                        icon = Icons.Default.Analytics,
-                        iconColor = HighOrange,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+        // Metric Stat Cards Grid
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                MetricStatCard(
+                    title = "Accuracy",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.accuracyPercent}%" else "Pending",
+                    subtitle = "Overall classification",
+                    icon = Icons.Default.Analytics,
+                    iconColor = SafeGreen,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricStatCard(
+                    title = "Recall (Sensitivity)",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.recallPercent}%" else "Pending",
+                    subtitle = "True positive flood hits",
+                    icon = Icons.Default.Analytics,
+                    iconColor = CyanAccent,
+                    modifier = Modifier.weight(1f)
+                )
             }
+        }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MetricStatCard(
-                        title = "False Alarm Rate",
-                        value = "${activeMetrics.falseAlarmRatePercent}%",
-                        subtitle = "Over-prediction rate",
-                        icon = Icons.Default.Analytics,
-                        iconColor = WatchAmber,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MetricStatCard(
-                        title = "Missed Event Rate",
-                        value = "${activeMetrics.missedEventRatePercent}%",
-                        subtitle = "Under-prediction rate",
-                        icon = Icons.Default.Analytics,
-                        iconColor = SevereRed,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                MetricStatCard(
+                    title = "Precision",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.precisionPercent}%" else "Pending",
+                    subtitle = "Alert trustworthiness",
+                    icon = Icons.Default.Analytics,
+                    iconColor = SkyRadar,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricStatCard(
+                    title = "F1 Score",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.f1ScorePercent}%" else "Pending",
+                    subtitle = "Harmonic mean metric",
+                    icon = Icons.Default.Analytics,
+                    iconColor = SkyRadar,
+                    modifier = Modifier.weight(1f)
+                )
             }
+        }
 
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = NavySurface),
-                    shape = RoundedCornerShape(12.dp),
-                    border = CardDefaults.outlinedCardBorder().copy(brush = Brush.horizontalGradient(listOf(NavyBorder, CyanAccent.copy(alpha = 0.3f))))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text("EVALUATION SAMPLE SIZE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = CyanAccent)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("${activeMetrics.verifiedEventsCount} Verified Inundation Ground-Truth Records", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                        Text("Monitored across 4 major low points: EcoSpace, Agara Underpass, Ibblur Junction, and Rainbow Drive.", fontSize = 11.sp, color = TextSecondary)
-                    }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                MetricStatCard(
+                    title = "False Alarm Rate",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.falseAlarmRatePercent}%" else "Pending",
+                    subtitle = "Over-prediction rate",
+                    icon = Icons.Default.Analytics,
+                    iconColor = WatchAmber,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricStatCard(
+                    title = "Missed Event Rate",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.missedEventRatePercent}%" else "Pending",
+                    subtitle = "Under-prediction rate",
+                    icon = Icons.Default.Analytics,
+                    iconColor = SevereRed,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                MetricStatCard(
+                    title = "Lead Time",
+                    value = if (activeMetrics.hasSufficientData) "${activeMetrics.averageLeadTimeMinutes} min" else "Pending",
+                    subtitle = "Average advance warning",
+                    icon = Icons.Default.Analytics,
+                    iconColor = HighOrange,
+                    modifier = Modifier.weight(1f)
+                )
+                MetricStatCard(
+                    title = "Verified Events",
+                    value = "${activeMetrics.verifiedEventsCount} records",
+                    subtitle = "Field ground truth sample",
+                    icon = Icons.Default.Analytics,
+                    iconColor = TextSecondary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = NavySurface),
+                shape = RoundedCornerShape(12.dp),
+                border = CardDefaults.outlinedCardBorder().copy(brush = Brush.horizontalGradient(listOf(NavyBorder, CyanAccent.copy(alpha = 0.3f))))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("VERIFICATION OBSERVATIONS MESH", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = CyanAccent)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        if (selectedTab == 0) "DEMO SCENARIO — NOT VALIDATION" else "Field Telemetry Ground-Truth Network",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Continuous inundation depth and discharge monitoring at 4 critical nodes: Outer Ring Road EcoSpace (SWD-3), Agara Junction Underpass (SWD-1), Ibblur Sump (SWD-2), and Rainbow Drive (SWD-5).",
+                        fontSize = 11.sp,
+                        color = TextSecondary,
+                        lineHeight = 15.sp
+                    )
                 }
             }
         }

@@ -41,18 +41,21 @@ class FloodSafeRepository(
     private val _historicalEvents = MutableStateFlow<List<HistoricalEvent>>(emptyList())
     val historicalEvents: StateFlow<List<HistoricalEvent>> = _historicalEvents.asStateFlow()
 
+    val geoSpatialRepository: GeoSpatialRepository = GeoSpatialRepository()
+
     private val _demoValidationMetrics = MutableStateFlow(
         ValidationMetrics(
-            accuracyPercent = 84.6,
-            precisionPercent = 81.2,
-            recallPercent = 88.5,
-            falseAlarmRatePercent = 16.4,
-            missedEventRatePercent = 11.5,
-            averageLeadTimeMinutes = 48,
-            verifiedEventsCount = 38,
+            accuracyPercent = 0.0,
+            precisionPercent = 0.0,
+            recallPercent = 0.0,
+            falseAlarmRatePercent = 0.0,
+            missedEventRatePercent = 0.0,
+            averageLeadTimeMinutes = 0,
+            verifiedEventsCount = 0,
             isDemo = true,
-            hasSufficientData = true,
-            notice = "Calibrated on 38 historical inundation benchmark events across Bellandur–Agara catchment (2020–2024)."
+            hasSufficientData = false,
+            notice = "Validation pending verified ground-truth data.",
+            statusLabel = "DEMO SCENARIO — NOT VALIDATION"
         )
     )
     val demoValidationMetrics: StateFlow<ValidationMetrics> = _demoValidationMetrics.asStateFlow()
@@ -68,7 +71,8 @@ class FloodSafeRepository(
             verifiedEventsCount = 0,
             isDemo = false,
             hasSufficientData = false,
-            notice = "Insufficient real-world validation data"
+            notice = "Validation pending verified ground-truth data.",
+            statusLabel = "Validation pending verified ground-truth data."
         )
     )
     val realValidationMetrics: StateFlow<ValidationMetrics> = _realValidationMetrics.asStateFlow()
@@ -345,7 +349,8 @@ class FloodSafeRepository(
                 verifiedEventsCount = records.size,
                 isDemo = false,
                 hasSufficientData = false,
-                notice = "Insufficient real-world validation data"
+                notice = "Validation pending verified ground-truth data.",
+                statusLabel = "Validation pending verified ground-truth data."
             )
         } else {
             val hits = records.count { it.predictionStatus == "CORRECT HIT" }
