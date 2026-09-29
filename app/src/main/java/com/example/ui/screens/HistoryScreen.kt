@@ -36,22 +36,40 @@ fun HistoryScreen(
         contentPadding = PaddingValues(top = 12.dp, bottom = 90.dp)
     ) {
         item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "HISTORICAL BENCHMARK SCENARIOS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SkyRadar,
+                    letterSpacing = 0.5.sp
+                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = WatchAmberBg
+                ) {
+                    Text(
+                        text = "● DEMO SCENARIOS",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = WatchAmber,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
             Text(
-                text = "HISTORICAL GROUND TRUTH",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = SkyRadar,
-                letterSpacing = 0.5.sp
-            )
-            Text(
-                text = "Past Bellandur Inundation Records",
+                text = "Catchment Inundation Benchmarks",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = TextPrimary
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Archived events compiled from KSNDMC rainfall telemetry, BBMP disaster control room logs, and verified on-ground photos. Tap Replay to simulate retrospective nowcast.",
+                text = "Prototype historical benchmark scenarios for the Bellandur–Agara catchment. External KSNDMC/BBMP datasets are planned for future validation.",
                 fontSize = 12.sp,
                 color = TextSecondary,
                 lineHeight = 16.sp
@@ -60,7 +78,7 @@ fun HistoryScreen(
 
         items(historicalEvents.size) { index ->
             val event = historicalEvents[index]
-            val isHit = event.predictionStatus == "CORRECT HIT"
+            val isHit = event.predictionStatus == "DEMO CORRECT-HIT SCENARIO" || event.predictionStatus == "CORRECT HIT"
 
             Card(
                 modifier = Modifier
@@ -81,17 +99,31 @@ fun HistoryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(text = event.date, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = CyanAccent)
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = if (isHit) SafeGreenBg else WatchAmberBg
-                        ) {
-                            Text(
-                                text = event.predictionStatus,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isHit) SafeGreen else WatchAmber,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = NavyCard
+                            ) {
+                                Text(
+                                    text = "HISTORICAL BENCHMARK — NOT VERIFIED",
+                                    fontSize = 8.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SkyRadar,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (isHit) SafeGreenBg else WatchAmberBg
+                            ) {
+                                Text(
+                                    text = event.predictionStatus,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isHit) SafeGreen else WatchAmber,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     }
 

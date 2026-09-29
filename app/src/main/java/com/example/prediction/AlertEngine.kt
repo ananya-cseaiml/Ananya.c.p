@@ -12,37 +12,84 @@ import kotlin.math.sqrt
 
 /**
  * Alert Engine for FloodSafe Bengaluru
- * Evaluates risk threshold, road relevance, user distance, prediction horizon, and alert cooldown.
- * Generates both citizen-facing flood alerts and government operational actions.
- * Prevents duplicate alerts and spamming.
+ * - Evaluates meaningful risk transitions (LOW -> MODERATE, MODERATE -> HIGH, HIGH -> SEVERE)
+ * - Detects rapidly increasing rainfall & culvert surcharge bottlenecks
+ * - Considers user proximity to hazard
+ * - Enforces alert cooldown & de-duplication per corridor to prevent alert fatigue
+ * - Generates clear citizen-facing alerts & municipal government decision-support actions
  */
 class AlertEngine(
-    var highRiskThreshold: Int = 60,
-    var severeRiskThreshold: Int = 80,
+    var moderateRiskThreshold: Int = 25,
+    var highRiskThreshold: Int = 50,
+    var severeRiskThreshold: Int = 75,
     var alertCooldownMs: Long = 300_000L // 5-minute cooldown per corridor
 ) {
     // Tracks the last alert time per location ID to prevent duplicates
     private val lastAlertTimeMap = ConcurrentHashMap<String, Long>()
+
+    // Tracks previously observed risk level per location/road to detect state transitions
+    private val previousRiskLevelMap = ConcurrentHashMap<String, RiskLevel>()
+
     private val timeFormat = SimpleDateFormat("HH:mm, dd MMM", Locale.ENGLISH)
+
+    /**
+     * Checks if a risk transition has occurred (e.g., LOW -> MODERATE, MODERATE -> HIGH, HIGH -> SEVERE)
+     */
+    fun isMeaningfulTransition(id: String, currentLevel: RiskLevel): Boolean {
+        val prevLevel = previousRiskLevelMap[id]
+        previousRiskLevelMap[id] = currentLevel
+        if (prevLevel == null) {
+            // First time evaluation: alert if already MODERATE, HIGH or SEVERE
+            return currentLevel != RiskLevel.LOW
+        }
+        return currentLevel.ordinal > prevLevel.ordinal
+    }
+
+    /**
+     * Checks if cooldown period has elapsed for an entity
+     */
+    fun isCooldownExpired(id: String): Boolean {
+        val now = System.currentTimeMillis()
+        val lastAlert = lastAlertTimeMap[id] ?: 0L
+        return (now - lastAlert) >= alertCooldownMs
+    }
+
+    /**
+     * Records dispatch to enforce cooldown
+     */
+    fun recordAlertDispatched(id: String) {
+        lastAlertTimeMap[id] = System.currentTimeMillis()
+    }
+
+    /**
+     * Clears cooldown & transition memory (e.g. on scenario reset)
+     */
+    fun resetCooldowns() {
+        lastAlertTimeMap.clear()
+        previousRiskLevelMap.clear()
+    }
 
     /**
      * Determines whether an alert should be generated for a location
      */
     fun shouldGenerateAlert(
         locationId: String,
-        riskPercentage: Int,
+        currentRisk: Int,
         userLat: Double? = null,
         userLng: Double? = null,
         targetLat: Double? = null,
         targetLng: Double? = null,
-        maxDistanceKm: Double = 10.0
+        maxDistanceKm: Double = 10.0,
+        forceImmediate: Boolean = false
     ): Boolean {
-        // 1. Check risk threshold
-        if (riskPercentage < highRiskThreshold) {
+        val level = RiskLevel.fromScore(currentRisk)
+
+        // Only alert for MODERATE, HIGH, or SEVERE risk
+        if (level == RiskLevel.LOW && !forceImmediate) {
             return false
         }
 
-        // 2. Check distance relevance if user coordinates are available
+        // Distance check if user location is available
         if (userLat != null && userLng != null && targetLat != null && targetLng != null) {
             val distKm = calculateDistanceKm(userLat, userLng, targetLat, targetLng)
             if (distKm > maxDistanceKm) {
@@ -50,41 +97,15 @@ class AlertEngine(
             }
         }
 
-        // 3. Check alert cooldown to prevent duplicate alerts
-        val now = System.currentTimeMillis()
-        val lastAlert = lastAlertTimeMap[locationId] ?: 0L
-        if (now - lastAlert < alertCooldownMs) {
-            return false
-        }
+        // Must be a meaningful transition or forced, AND cooldown expired
+        val transitionOccurred = isMeaningfulTransition(locationId, level)
+        val cooldownPassed = isCooldownExpired(locationId)
 
-        return true
+        return (transitionOccurred || forceImmediate) && cooldownPassed
     }
 
     /**
-     * Records that an alert was dispatched to enforce cooldown
-     */
-    fun recordAlertDispatched(locationId: String) {
-        lastAlertTimeMap[locationId] = System.currentTimeMillis()
-    }
-
-    /**
-     * Clears cooldown memory (e.g. on scenario reset)
-     */
-    fun resetCooldowns() {
-        lastAlertTimeMap.clear()
-    }
-
-    /**
-     * Generates a Citizen-Facing Flood Alert
-     * Strictly fulfills Requirement 18:
-     * - Location
-     * - Risk %
-     * - Severity
-     * - Expected time
-     * - Reason
-     * - Recommended action
-     * - Issued timestamp
-     * - Clearly labeled: MODEL-GENERATED PREDICTION
+     * Generates Citizen-Facing Flood Alert with exact required structure
      */
     fun createCitizenAlert(
         id: String,
@@ -95,11 +116,7 @@ class AlertEngine(
         recommendedAction: String,
         isVerifiedObservation: Boolean = false
     ): FloodAlert {
-        val severity = when {
-            riskPercentage >= severeRiskThreshold -> RiskLevel.SEVERE
-            riskPercentage >= highRiskThreshold -> RiskLevel.HIGH
-            else -> RiskLevel.WATCH
-        }
+        val severity = RiskLevel.fromScore(riskPercentage)
 
         return FloodAlert(
             id = id,
@@ -116,8 +133,7 @@ class AlertEngine(
     }
 
     /**
-     * Generates an actionable Government Decision-Support recommendation
-     * strictly fulfilling Requirement 20
+     * Generates Government Decision-Support Action item
      */
     fun createGovernmentAction(
         location: String,
@@ -126,35 +142,26 @@ class AlertEngine(
         drainageStressPercent: Int,
         isUnderpassOrDepression: Boolean
     ): GovernmentActionItem {
-        val severity = when {
-            riskPercentage >= severeRiskThreshold -> RiskLevel.SEVERE
-            riskPercentage >= highRiskThreshold -> RiskLevel.HIGH
-            else -> RiskLevel.WATCH
-        }
+        val severity = RiskLevel.fromScore(riskPercentage)
 
         val (action, agency, priority) = when {
-            rainfallMmHr >= 50.0 && drainageStressPercent >= 80 -> Triple(
-                "Inspect culvert inlet for debris clogging, open barrier screens & position 50HP mobile dewatering pump",
-                "BBMP Stormwater Drain (SWD) Dept",
+            severity == RiskLevel.SEVERE || (rainfallMmHr >= 50.0 && drainageStressPercent >= 80) -> Triple(
+                "Recommended action: Position 50HP mobile dewatering pumps & prepare emergency traffic diversion",
+                "BBMP Stormwater Drain (SWD) Dept & Traffic Police",
                 "CRITICAL"
             )
-            severity == RiskLevel.SEVERE -> Triple(
-                "Deploy emergency barricades, close flooded underpass ingress & dispatch NDRF / Civil Defence unit",
-                "Bengaluru Traffic Police & KSDMA",
-                "IMMEDIATE"
-            )
-            isUnderpassOrDepression && riskPercentage >= 60 -> Triple(
-                "Verify automatic sump pump float sensors and initiate traffic diversion signage via ridge bypass",
+            severity == RiskLevel.HIGH -> Triple(
+                "Recommended action: Inspect culvert inlet screens for debris clogging & prepare diversion signage via ridge bypass",
                 "BBMP Road Infrastructure & Traffic Police",
                 "HIGH"
             )
-            drainageStressPercent >= 70 -> Triple(
-                "Clear roadside silt traps and monitor downstream lake weir gates",
-                "BBMP Engineering & BWSSB",
-                "HIGH"
+            isUnderpassOrDepression && riskPercentage >= 35 -> Triple(
+                "Recommended action: Verify automatic sump pump float sensors and monitor road camber drainage",
+                "BBMP Ward Engineering",
+                "MEDIUM"
             )
             else -> Triple(
-                "Routine pre-monsoon culvert surveillance and camber drainage clearance",
+                "Recommended action: Routine surveillance of culvert inlet screens and silt traps",
                 "BBMP Ward Engineering",
                 "ROUTINE"
             )
@@ -171,7 +178,7 @@ class AlertEngine(
     }
 
     /**
-     * Evaluates all locations and roads in current catchment state and produces active alerts
+     * Evaluates catchment state and generates de-duplicated, transition-based alerts
      */
     fun evaluateCatchmentAlerts(
         locations: List<LocationInfo>,
@@ -183,42 +190,48 @@ class AlertEngine(
         val actions = mutableListOf<GovernmentActionItem>()
 
         locations.forEach { loc ->
-            if (loc.currentRisk >= highRiskThreshold) {
-                val alert = createCitizenAlert(
-                    id = "alt_${loc.id}_${System.currentTimeMillis() % 10000}",
-                    location = "${loc.name} (${loc.ward})",
-                    riskPercentage = loc.currentRisk,
-                    expectedTime = loc.predictedTimeWindow,
-                    reason = loc.whyAtRisk,
-                    recommendedAction = loc.recommendedAction,
-                    isVerifiedObservation = false
-                )
-                alerts.add(alert)
-                recordAlertDispatched(loc.id)
+            val level = RiskLevel.fromScore(loc.currentRisk)
+            if (level != RiskLevel.LOW) {
+                val shouldAlert = isCooldownExpired(loc.id)
+                if (shouldAlert) {
+                    val alert = createCitizenAlert(
+                        id = "alt_${loc.id}_${System.currentTimeMillis() % 10000}",
+                        location = "${loc.name} (${loc.ward})",
+                        riskPercentage = loc.currentRisk,
+                        expectedTime = loc.predictedTimeWindow,
+                        reason = "${level.label} flood risk projected near ${loc.name} within next hour due to increasing rainfall (${rainfallMmHr.toInt()} mm/hr) and elevated drainage stress ($drainageStressPercent%).",
+                        recommendedAction = loc.recommendedAction,
+                        isVerifiedObservation = false
+                    )
+                    alerts.add(alert)
+                    recordAlertDispatched(loc.id)
+                }
 
                 val action = createGovernmentAction(
                     location = loc.name,
                     riskPercentage = loc.currentRisk,
                     rainfallMmHr = rainfallMmHr,
                     drainageStressPercent = drainageStressPercent,
-                    isUnderpassOrDepression = loc.elevationMeters <= 875.0
+                    isUnderpassOrDepression = loc.elevationMeters <= 874.0
                 )
                 actions.add(action)
             }
         }
 
         roads.forEach { road ->
-            if (road.riskPercentage >= highRiskThreshold && alerts.none { it.location.contains(road.roadName) }) {
+            val roadLevel = RiskLevel.fromScore(road.riskPercentage)
+            if (roadLevel != RiskLevel.LOW && isCooldownExpired(road.id) && alerts.none { it.location.contains(road.roadName) }) {
                 val alert = createCitizenAlert(
                     id = "alt_${road.id}_${System.currentTimeMillis() % 10000}",
                     location = road.roadName,
                     riskPercentage = road.riskPercentage,
                     expectedTime = road.predictionTime,
-                    reason = road.reasons.firstOrNull() ?: "Culvert hydraulic surcharge",
-                    recommendedAction = "Avoid corridor. Use designated high-elevation bypass.",
+                    reason = road.reasons.firstOrNull() ?: "Culvert bottleneck hydraulic surcharge (${road.drainageStressPercent}%)",
+                    recommendedAction = "Avoid corridor. Use designated high-elevation bypass route.",
                     isVerifiedObservation = false
                 )
                 alerts.add(alert)
+                recordAlertDispatched(road.id)
             }
         }
 
@@ -228,8 +241,8 @@ class AlertEngine(
     /**
      * Haversine formula for distance in km
      */
-    private fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0 // Radius of earth in km
+    fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
         val a = sin(dLat / 2) * sin(dLat / 2) +

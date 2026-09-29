@@ -37,7 +37,7 @@ abstract class FloodSafeDatabase : RoomDatabase() {
                     context.applicationContext,
                     FloodSafeDatabase::class.java,
                     "floodsafe_bengaluru.db"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }

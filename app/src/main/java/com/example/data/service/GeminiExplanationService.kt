@@ -12,12 +12,24 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+/**
+ * Gemini Explanation Service
+ *
+ * Development/prototype implementation. Production deployment should move Gemini calls to a secure backend.
+ *
+ * Constraints & Guarantees:
+ * 1. Gemini is strictly restricted to qualitative explanations, natural-language summaries,
+ *    citizen-friendly risk descriptions, and authority decision-support recommendations.
+ * 2. Gemini NEVER determines numerical flood-risk scores, probabilities, or hydraulic parameters.
+ *    All numerical values are computed exclusively by FloodRiskEngine.
+ */
 class GeminiExplanationService {
     private val client = OkHttpClient.Builder()
         .connectTimeout(6, TimeUnit.SECONDS)
         .readTimeout(8, TimeUnit.SECONDS)
         .build()
 
+    // Development/prototype implementation. Production deployment should move Gemini calls to a secure backend.
     private val apiKey: String by lazy {
         try {
             val field = BuildConfig::class.java.getField("GEMINI_API_KEY")
@@ -110,9 +122,10 @@ class GeminiExplanationService {
                 "causing rapid surface runoff that surcharges the primary Rajakaluve drain to $drainageStressPercent% capacity. " +
                 "Backwater effects from downstream culverts create localized inundation risks."
 
-        val action = "1. BBMP Stormwater: Inspect ${location.name} culvert grates and deploy high-capacity mobile dewatering pumps.\n" +
-                "2. Bengaluru Traffic Police: Prepare detour signs and monitor water accumulation depth on Outer Ring Road.\n" +
-                "3. Disaster Management: Pre-position quick response teams at nearby high ground."
+        val action = "Decision-Support Recommendations:\n" +
+                "1. Recommended action: Inspect ${location.name} culvert grates and deploy high-capacity mobile dewatering pumps.\n" +
+                "2. Recommended action: Prepare detour signs and monitor water accumulation depth on Outer Ring Road.\n" +
+                "3. Recommended action: Pre-position quick response teams at nearby high ground."
 
         return Pair("$why\n\n$action", attribution)
     }

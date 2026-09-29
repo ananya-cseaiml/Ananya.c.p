@@ -10,7 +10,7 @@ import com.example.data.service.*
 class GeoSpatialRepository(
     val staticTerrainProvider: TerrainDataProvider = StaticGisTerrainDataProvider(),
     val demoTerrainProvider: TerrainDataProvider = DemoTerrainDataProvider(),
-    val realDrainageProvider: DrainageDataProvider = BbmpRajakaluveDrainageDataProvider(),
+    val realDrainageProvider: DrainageDataProvider = BbmpRajakaluvePrototypeDataProvider(),
     val demoDrainageProvider: DrainageDataProvider = DemoDrainageDataProvider()
 ) {
     fun getTerrainProvider(isDemo: Boolean): TerrainDataProvider {

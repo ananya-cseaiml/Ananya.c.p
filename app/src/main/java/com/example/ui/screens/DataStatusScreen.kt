@@ -3,20 +3,18 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,7 +52,7 @@ fun DataStatusScreen(
                         letterSpacing = 0.5.sp
                     )
                     Text(
-                        text = "Telemetry & Sensor Mesh Status",
+                        text = "Telemetry & GIS Data Layers",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = TextPrimary
@@ -71,20 +69,84 @@ fun DataStatusScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Clear distinction between LIVE sensor telemetry, STATIC GIS layers, HISTORICAL ground truth, and simulated DEMO scenario data.",
+                text = "Transparent categorization of LIVE telemetry, STATIC GIS layers, PROTOTYPE DATA, and PLANNED INTEGRATIONS.",
                 fontSize = 12.sp,
                 color = TextSecondary,
                 lineHeight = 16.sp
             )
         }
 
+        // Section: Prototype Limitations (Requirement 13)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("prototype_limitations_card"),
+                colors = CardDefaults.cardColors(containerColor = NavySurface),
+                shape = RoundedCornerShape(12.dp),
+                border = CardDefaults.outlinedCardBorder().copy(
+                    brush = Brush.horizontalGradient(listOf(NavyBorder, CyanAccent.copy(alpha = 0.6f)))
+                )
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = CyanAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "PROTOTYPE LIMITATIONS",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = CyanAccent,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val limitations = listOf(
+                        "Terrain and drainage layers currently use prototype/static GIS-derived data.",
+                        "Historical validation requires verified ground-truth flood observations.",
+                        "Road routing currently uses a prototype road network unless a live routing provider is connected.",
+                        "Short-term risk projections depend on weather forecast quality and prototype catchment parameters.",
+                        "Production deployment would require calibrated hydrological models, verified datasets, real-time sensors where available, and secure backend infrastructure."
+                    )
+
+                    limitations.forEach { limitation ->
+                        Row(
+                            modifier = Modifier.padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = "• ",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = CyanAccent
+                            )
+                            Text(
+                                text = limitation,
+                                fontSize = 11.sp,
+                                color = TextPrimary,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         items(dataSources.size) { index ->
             val src = dataSources[index]
             val typeColor = when (src.type) {
-                "LIVE" -> SafeGreen
-                "DEMO" -> WatchAmber
-                "STATIC" -> SkyRadar
-                "HISTORICAL" -> CyanAccent
+                "LIVE", "LIVE WEATHER" -> SafeGreen
+                "DEMO", "DEMO DATA" -> WatchAmber
+                "STATIC", "STATIC GIS DATA", "STATIC/PROTOTYPE DATA" -> SkyRadar
+                "PROTOTYPE DATA", "PROTOTYPE" -> CyanAccent
+                "PLANNED INTEGRATION" -> HighOrange
                 "STALE" -> HighOrange
                 else -> SevereRed
             }
@@ -103,7 +165,7 @@ fun DataStatusScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(text = src.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                             Text(text = src.category, fontSize = 10.sp, color = TextSecondary)
                         }

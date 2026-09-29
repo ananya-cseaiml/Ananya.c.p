@@ -74,13 +74,31 @@ fun SafeNavigationScreen(
     ) {
         // Header
         item {
-            Text(
-                text = "SAFE NAVIGATION ENGINE",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = SkyRadar,
-                letterSpacing = 0.5.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "SAFE NAVIGATION ENGINE",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SkyRadar,
+                    letterSpacing = 0.5.sp
+                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = BlueDeep
+                ) {
+                    Text(
+                        text = "PROTOTYPE ROAD NETWORK",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = CyanAccent,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
             Text(
                 text = "Drainage-Coupled Flood Avoidance",
                 fontSize = 18.sp,
@@ -89,7 +107,7 @@ fun SafeNavigationScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Calculates route risk by integrating road-segment elevations, culvert hydraulic surcharge, and runoff accumulation.",
+                text = "Evaluates Fastest Route vs Flood-Safe Route over prototype road network with elevation profiles. Dynamic real-time OSRM/Google routing is a planned integration.",
                 fontSize = 12.sp,
                 color = TextSecondary,
                 lineHeight = 16.sp
@@ -275,7 +293,7 @@ fun SafeNavigationScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = route.routeType,
+                                text = if (isSafer) "FLOOD-SAFE ROUTE" else "FASTEST ROUTE",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = if (isSafer) SafeGreen else HighOrange
@@ -283,7 +301,7 @@ fun SafeNavigationScreen(
                         }
 
                         RiskBadge(
-                            level = if (route.floodRiskPercentage <= 30) RiskLevel.SAFE else (if (route.floodRiskPercentage <= 60) RiskLevel.WATCH else RiskLevel.HIGH),
+                            level = RiskLevel.fromScore(route.floodRiskPercentage),
                             riskPercentage = route.floodRiskPercentage
                         )
                     }

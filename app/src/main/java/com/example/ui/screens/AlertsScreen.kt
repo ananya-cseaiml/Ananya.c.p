@@ -42,7 +42,8 @@ fun AlertsScreen(
         when (selectedFilter) {
             "SEVERE" -> allAlerts.filter { it.severity == RiskLevel.SEVERE }
             "HIGH" -> allAlerts.filter { it.severity == RiskLevel.HIGH }
-            "WATCH" -> allAlerts.filter { it.severity == RiskLevel.WATCH }
+            "MODERATE" -> allAlerts.filter { it.severity == RiskLevel.MODERATE }
+            "LOW" -> allAlerts.filter { it.severity == RiskLevel.LOW }
             else -> allAlerts
         }
     }
@@ -71,7 +72,7 @@ fun AlertsScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Coupled hydrodynamic alerts generated before road surface inundation occurs. Alerts specify physical root causes and recommended mitigation.",
+                text = "Coupled rainfall-runoff alerts generated before road surface inundation occurs. Alerts specify physical root causes and recommended mitigation.",
                 fontSize = 12.sp,
                 color = TextSecondary,
                 lineHeight = 16.sp
@@ -86,7 +87,7 @@ fun AlertsScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("ALL", "SEVERE", "HIGH", "WATCH").forEach { f ->
+                listOf("ALL", "SEVERE", "HIGH", "MODERATE", "LOW").forEach { f ->
                     FilterChip(
                         selected = selectedFilter == f,
                         onClick = { selectedFilter = f },
@@ -164,8 +165,8 @@ fun AlertsScreen(
                                 when (alert.severity) {
                                     RiskLevel.SEVERE -> SevereRed
                                     RiskLevel.HIGH -> HighOrange
-                                    RiskLevel.WATCH -> WatchAmber
-                                    RiskLevel.SAFE -> SafeGreen
+                                    RiskLevel.MODERATE -> WatchAmber
+                                    RiskLevel.LOW -> SafeGreen
                                 },
                                 NavyBorder
                             )
@@ -185,8 +186,8 @@ fun AlertsScreen(
                                     tint = when (alert.severity) {
                                         RiskLevel.SEVERE -> SevereRed
                                         RiskLevel.HIGH -> HighOrange
-                                        RiskLevel.WATCH -> WatchAmber
-                                        RiskLevel.SAFE -> SafeGreen
+                                        RiskLevel.MODERATE -> WatchAmber
+                                        RiskLevel.LOW -> SafeGreen
                                     },
                                     modifier = Modifier.size(18.dp)
                                 )

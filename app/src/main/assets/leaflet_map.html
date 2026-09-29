@@ -196,7 +196,7 @@
       center: [DEFAULT_LAT, DEFAULT_LNG],
       zoom: 15,
       zoomControl: true,
-      preferCanvas: true
+      preferCanvas: false
     });
 
     // 1. Real Base Tile Layers
@@ -212,7 +212,7 @@
       attribution: '&copy; CartoDB &copy; OpenStreetMap'
     }).addTo(map); // Default active base layer
 
-    // Real Satellite Imagery (Esri World Imagery)
+    // Satellite Basemap Tiles (Esri World Imagery)
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
       attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics'
@@ -237,17 +237,17 @@
     const baseMaps = {
       "✨ Street Map (Carto)": cartoLayer,
       "🗺️ OpenStreetMap": osmLayer,
-      "🛰️ Real Satellite Imagery": satelliteLayer,
+      "🛰️ Satellite Basemap (Esri)": satelliteLayer,
       "🏔️ Topo Terrain (Contours)": topoLayer
     };
 
     const overlayMaps = {
-      "📍 Exact Location": gpsLayer,
-      "🌊 Flood Risk Heatspots": floodRiskLayer,
+      "📍 GPS Location": gpsLayer,
+      "🌊 Catchment Flood Risk": floodRiskLayer,
       "🛣️ Road Passability": roadsLayer,
-      "⚡ Storm Drains (Rajakaluve)": drainageLayer,
+      "⚡ Storm Drains (Prototype)": drainageLayer,
       "💧 Lakes & Basins": waterBodiesLayer,
-      "⚠️ Critical Hotspots": vulnerablePointsLayer,
+      "⚠️ Critical Sinks": vulnerablePointsLayer,
       "🚗 Nav Routes": routeLayer
     };
 
@@ -255,7 +255,9 @@
 
     function getSeverityColor(sev) {
       switch(sev) {
+        case 'LOW':
         case 'SAFE': return '#16a34a';
+        case 'MODERATE':
         case 'WATCH': return '#ca8a04';
         case 'HIGH': return '#ea580c';
         case 'SEVERE': return '#dc2626';
@@ -653,10 +655,10 @@
       const div = L.DomUtil.create('div', 'layer-legend');
       div.innerHTML = `
         <div style="font-weight:800; margin-bottom:4px; color:#1e40af;">Bengaluru Flood Model</div>
-        <div class="legend-item"><span class="legend-color" style="background:#16a34a"></span> SAFE (0–30%)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#ca8a04"></span> WATCH (31–60%)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#ea580c"></span> HIGH (61–80%)</div>
-        <div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> SEVERE (81–100%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#16a34a"></span> LOW (0–24%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#ca8a04"></span> MODERATE (25–49%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#ea580c"></span> HIGH (50–74%)</div>
+        <div class="legend-item"><span class="legend-color" style="background:#dc2626"></span> SEVERE (75–100%)</div>
         <div class="legend-item"><span class="legend-color" style="background:#06b6d4"></span> Storm Drain (Rajakaluve)</div>
         <div class="legend-item"><span class="legend-color" style="background:#2563eb; border-radius:50%"></span> Exact Real Location</div>
       `;

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -77,6 +78,21 @@ fun DrainageCouplingScreen(
                 color = TextSecondary,
                 lineHeight = 16.sp
             )
+            Spacer(modifier = Modifier.height(6.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = BlueDeep.copy(alpha = 0.5f),
+                border = BorderStroke(1.dp, SkyRadar.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "PROTOTYPE HYDROLOGICAL MODEL: Q_inflow = Rain × C × Area | Stress = Q_inflow / Q_capacity (Rational formulation, not a full 2D hydrodynamic simulation).",
+                    fontSize = 11.sp,
+                    color = SkyRadar,
+                    lineHeight = 15.sp,
+                    modifier = Modifier.padding(10.dp)
+                )
+            }
         }
 
         // The 8-Stage Physical Chain Flow

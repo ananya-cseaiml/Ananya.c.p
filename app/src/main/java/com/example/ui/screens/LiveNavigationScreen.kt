@@ -3,6 +3,7 @@ package com.example.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -166,7 +167,7 @@ fun LiveNavigationScreen(
                             color = if (isDemoMode) WatchAmberBg else (if (gpsStatus == GpsStatus.GPS_ACTIVE) SafeGreenBg else SevereRedBg)
                         ) {
                             Text(
-                                text = if (isDemoMode) "DEMO NAVIGATION"
+                                text = if (isDemoMode) "● DEMO SCENARIO NAVIGATION"
                                 else if (gpsStatus == GpsStatus.GPS_ACTIVE && currentLocation != null)
                                     "LIVE GPS: ${String.format(java.util.Locale.ENGLISH, "%.4f", currentLocation?.latitude ?: 12.9254)}, ${String.format(java.util.Locale.ENGLISH, "%.4f", currentLocation?.longitude ?: 77.6740)}"
                                 else gpsStatus.label,
@@ -178,8 +179,8 @@ fun LiveNavigationScreen(
                         }
 
                         RiskBadge(
-                            level = if (selectedRouteType == "SAFER") RiskLevel.SAFE else scenarioState.overallRiskLevel,
-                            riskPercentage = if (selectedRouteType == "SAFER") 18 else scenarioState.overallFloodRiskPercent
+                            level = if (selectedRouteType == "SAFER") RiskLevel.LOW else scenarioState.overallRiskLevel,
+                            riskPercentage = if (selectedRouteType == "SAFER") 15 else scenarioState.overallFloodRiskPercent
                         )
                     }
 
@@ -370,9 +371,7 @@ fun LiveNavigationScreen(
                                 viewModel.navigateTo(AppScreen.SAFE_NAV)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = SevereRedBg),
-                            border = ButtonDefaults.outlinedButtonBorder.copy(
-                                brush = Brush.horizontalGradient(listOf(SevereRedDark, SevereRed))
-                            ),
+                            border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(SevereRedDark, SevereRed))),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.testTag("stop_nav_button")
                         ) {
@@ -396,7 +395,7 @@ fun LiveNavigationScreen(
                             Column(modifier = Modifier.padding(8.dp)) {
                                 Text("AHEAD RISK", fontSize = 9.sp, color = TextSecondary)
                                 Text(
-                                    text = if (selectedRouteType == "SAFER") "18% (SAFE)" else "${scenarioState.overallFloodRiskPercent}% (${scenarioState.overallRiskLevel.name})",
+                                    text = if (selectedRouteType == "SAFER") "15% (LOW)" else "${scenarioState.overallFloodRiskPercent}% (${scenarioState.overallRiskLevel.name})",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (selectedRouteType == "SAFER") SafeGreen else HighOrange

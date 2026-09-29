@@ -64,7 +64,7 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Tune hydrodynamic risk thresholds and physical coupling weights for the Bellandur–Agara basin model.",
+                text = "Tune prototype hydrological risk thresholds and physical coupling weights for the Bellandur–Agara basin model.",
                 fontSize = 12.sp,
                 color = TextSecondary,
                 lineHeight = 16.sp
@@ -103,38 +103,38 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Text("Safe Max Threshold: ${safeThreshold.toInt()}%", fontSize = 12.sp, color = SafeGreen, fontWeight = FontWeight.SemiBold)
+                    Text("LOW Max Threshold: ${safeThreshold.toInt()}% (0–${safeThreshold.toInt()})", fontSize = 12.sp, color = SafeGreen, fontWeight = FontWeight.SemiBold)
                     Slider(
                         value = safeThreshold,
                         onValueChange = {
                             safeThreshold = it
                             viewModel.updateThresholds(safeThreshold.toInt(), watchThreshold.toInt(), highThreshold.toInt())
                         },
-                        valueRange = 10f..40f,
+                        valueRange = 15f..30f,
                         colors = SliderDefaults.colors(thumbColor = SafeGreen, activeTrackColor = SafeGreen)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text("Watch Max Threshold: ${watchThreshold.toInt()}%", fontSize = 12.sp, color = WatchAmber, fontWeight = FontWeight.SemiBold)
+                    Text("MODERATE Max Threshold: ${watchThreshold.toInt()}% (${safeThreshold.toInt() + 1}–${watchThreshold.toInt()})", fontSize = 12.sp, color = WatchAmber, fontWeight = FontWeight.SemiBold)
                     Slider(
                         value = watchThreshold,
                         onValueChange = {
                             watchThreshold = it
                             viewModel.updateThresholds(safeThreshold.toInt(), watchThreshold.toInt(), highThreshold.toInt())
                         },
-                        valueRange = 40f..70f,
+                        valueRange = 35f..60f,
                         colors = SliderDefaults.colors(thumbColor = WatchAmber, activeTrackColor = WatchAmber)
                     )
 
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text("High Max Threshold: ${highThreshold.toInt()}% (Above is SEVERE)", fontSize = 12.sp, color = HighOrange, fontWeight = FontWeight.SemiBold)
+                    Text("HIGH Max Threshold: ${highThreshold.toInt()}% (Above is SEVERE: ${highThreshold.toInt() + 1}–100)", fontSize = 12.sp, color = HighOrange, fontWeight = FontWeight.SemiBold)
                     Slider(
                         value = highThreshold,
                         onValueChange = {
                             highThreshold = it
                             viewModel.updateThresholds(safeThreshold.toInt(), watchThreshold.toInt(), highThreshold.toInt())
                         },
-                        valueRange = 70f..90f,
+                        valueRange = 65f..85f,
                         colors = SliderDefaults.colors(thumbColor = HighOrange, activeTrackColor = HighOrange)
                     )
                 }

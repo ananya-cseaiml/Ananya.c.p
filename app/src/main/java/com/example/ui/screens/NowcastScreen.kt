@@ -40,7 +40,7 @@ fun NowcastScreen(
     ) {
         item {
             Text(
-                text = "HYDRODYNAMIC PROJECTIONS",
+                text = "CONCEPTUAL / PROTOTYPE RAINFALL-RUNOFF MODEL",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = SkyRadar,
@@ -72,7 +72,7 @@ fun NowcastScreen(
                     Icon(Icons.Default.Info, contentDescription = null, tint = SkyRadar, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Prototype probabilistic flood-risk estimates. Predictions incorporate terrain depressions, drainage capacity, and radar rainfall rates.",
+                        text = "Risk projection based on weather forecast + prototype catchment model. Predictions map forecasted precipitation to runoff and conduit hydraulic surcharge (15–120m horizon).",
                         fontSize = 11.sp,
                         color = TextSecondary
                     )

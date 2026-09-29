@@ -45,12 +45,17 @@ fun FloodMapScreen(
     var showDetailsSheet by remember { mutableStateOf(false) }
     var recenterAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    // Layer toggle states
+    // 10 Layer toggle states matching Section 4 specifications
     var floodRiskActive by remember { mutableStateOf(true) }
-    var roadsActive by remember { mutableStateOf(true) }
+    var rainfallActive by remember { mutableStateOf(true) }
     var drainageActive by remember { mutableStateOf(true) }
-    var waterBodiesActive by remember { mutableStateOf(true) }
-    var vulnerableActive by remember { mutableStateOf(true) }
+    var flowAccActive by remember { mutableStateOf(true) }
+    var terrainActive by remember { mutableStateOf(true) }
+    var roadsActive by remember { mutableStateOf(true) }
+    var safeRouteActive by remember { mutableStateOf(true) }
+    var riskyRoadsActive by remember { mutableStateOf(true) }
+    var userLocationActive by remember { mutableStateOf(true) }
+    var vulnerableZonesActive by remember { mutableStateOf(true) }
 
     val currentLat = currentLocation?.latitude ?: 12.9254
     val currentLng = currentLocation?.longitude ?: 77.6740
@@ -139,7 +144,7 @@ fun FloodMapScreen(
                 }
             }
 
-            // Layer Toggle Controls Filter Row
+            // Layer Toggle Controls Filter Row (10 Layers per Section 4 specifications)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -151,34 +156,71 @@ fun FloodMapScreen(
                 FilterChip(
                     selected = floodRiskActive,
                     onClick = { floodRiskActive = !floodRiskActive },
-                    label = { Text("Flood Risk", fontSize = 11.sp) },
+                    label = { Text("1. Flood Risk", fontSize = 11.sp) },
                     leadingIcon = { Icon(Icons.Default.Water, contentDescription = null, modifier = Modifier.size(14.dp)) },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
                 )
                 FilterChip(
-                    selected = roadsActive,
-                    onClick = { roadsActive = !roadsActive },
-                    label = { Text("Roads", fontSize = 11.sp) },
-                    leadingIcon = { Icon(Icons.Default.DirectionsCar, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    selected = rainfallActive,
+                    onClick = { rainfallActive = !rainfallActive },
+                    label = { Text("2. Rainfall", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.CloudQueue, contentDescription = null, modifier = Modifier.size(14.dp)) },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
                 )
                 FilterChip(
                     selected = drainageActive,
                     onClick = { drainageActive = !drainageActive },
-                    label = { Text("Drainage", fontSize = 11.sp) },
+                    label = { Text("3. Drainage Stress", fontSize = 11.sp) },
                     leadingIcon = { Icon(Icons.Default.Waves, contentDescription = null, modifier = Modifier.size(14.dp)) },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
                 )
                 FilterChip(
-                    selected = waterBodiesActive,
-                    onClick = { waterBodiesActive = !waterBodiesActive },
-                    label = { Text("Lakes", fontSize = 11.sp) },
+                    selected = flowAccActive,
+                    onClick = { flowAccActive = !flowAccActive },
+                    label = { Text("4. Flow Accumulation", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.Grain, contentDescription = null, modifier = Modifier.size(14.dp)) },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
                 )
                 FilterChip(
-                    selected = vulnerableActive,
-                    onClick = { vulnerableActive = !vulnerableActive },
-                    label = { Text("Hotspots", fontSize = 11.sp) },
+                    selected = terrainActive,
+                    onClick = { terrainActive = !terrainActive },
+                    label = { Text("5. Terrain/Elevation", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.Terrain, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
+                )
+                FilterChip(
+                    selected = roadsActive,
+                    onClick = { roadsActive = !roadsActive },
+                    label = { Text("6. Roads", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.DirectionsCar, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
+                )
+                FilterChip(
+                    selected = safeRouteActive,
+                    onClick = { safeRouteActive = !safeRouteActive },
+                    label = { Text("7. Safe Route", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.Shield, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
+                )
+                FilterChip(
+                    selected = riskyRoadsActive,
+                    onClick = { riskyRoadsActive = !riskyRoadsActive },
+                    label = { Text("8. Risky Roads", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
+                )
+                FilterChip(
+                    selected = userLocationActive,
+                    onClick = { userLocationActive = !userLocationActive },
+                    label = { Text("9. User Location", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
+                )
+                FilterChip(
+                    selected = vulnerableZonesActive,
+                    onClick = { vulnerableZonesActive = !vulnerableZonesActive },
+                    label = { Text("10. Flood Zones", fontSize = 11.sp) },
+                    leadingIcon = { Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(14.dp)) },
                     colors = FilterChipDefaults.filterChipColors(selectedContainerColor = BlueDeep, selectedLabelColor = SkyRadar)
                 )
             }
@@ -394,6 +436,46 @@ fun FloodMapScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
+                                    Text("Rainfall Intensity:", fontSize = 11.sp, color = TextSecondary)
+                                    Text("${scenarioState.rainfallMmHr.toInt()} mm/hr", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Drainage Stress:", fontSize = 11.sp, color = TextSecondary)
+                                    Text("${scenarioState.drainageStressPercent}% capacity utilization", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (scenarioState.drainageStressPercent >= 75) SevereRed else WatchAmber)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Terrain & ASL:", fontSize = 11.sp, color = TextSecondary)
+                                    Text("${loc.elevationMeters}m ASL, ${loc.slopePercent}% slope", fontSize = 11.sp, color = TextPrimary)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Flow Accumulation:", fontSize = 11.sp, color = TextSecondary)
+                                    Text("Index ${loc.flowAccumulationIndex} (Urban convergence)", fontSize = 11.sp, color = TextPrimary)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Historical Vulnerability:", fontSize = 11.sp, color = TextSecondary)
+                                    Text(if (loc.isVulnerableHotspot) "Recurring inundation hotspot" else "Low historical frequency", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
                                     Text("Predicted Horizon:", fontSize = 11.sp, color = TextSecondary)
                                     Text(loc.predictedTimeWindow, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                                 }
@@ -404,14 +486,6 @@ fun FloodMapScreen(
                                 ) {
                                     Text("Model Confidence:", fontSize = 11.sp, color = TextSecondary)
                                     Text("${loc.confidence}%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = CyanAccent)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("Elevation / ASL:", fontSize = 11.sp, color = TextSecondary)
-                                    Text("${loc.elevationMeters}m (Basin depression)", fontSize = 11.sp, color = TextPrimary)
                                 }
                             }
                         }

@@ -52,8 +52,8 @@ fun HomeScreen(
     val isRefreshingWeather by viewModel.isRefreshingLiveWeather.collectAsState()
 
     val currentRiskColor = when (scenarioState.overallRiskLevel) {
-        RiskLevel.SAFE -> SafeGreen
-        RiskLevel.WATCH -> WatchAmberDark
+        RiskLevel.LOW -> SafeGreen
+        RiskLevel.MODERATE -> WatchAmberDark
         RiskLevel.HIGH -> HighOrange
         RiskLevel.SEVERE -> SevereRed
     }
@@ -128,16 +128,34 @@ fun HomeScreen(
                                     )
                             )
                             Column {
+                                val isLive = currentAppMode == "LIVE"
+                                val isStale = liveWeather?.isStale == true || liveWeather?.status == com.example.data.model.DataStatus.STALE
+                                val isLiveAvailable = isLive && liveWeather?.status == com.example.data.model.DataStatus.LIVE && !isStale
                                 Text(
-                                    text = if (currentAppMode == "LIVE") "REAL-TIME TELEMETRY ACTIVE" else "SIMULATED SCENARIO DEMO",
+                                    text = when {
+                                        !isLive -> "● DEMO SCENARIO"
+                                        isLiveAvailable -> "● LIVE WEATHER"
+                                        isStale && liveWeather != null -> "● CACHED DATA — MAY BE STALE"
+                                        else -> "● LIVE WEATHER UNAVAILABLE"
+                                    },
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = if (currentAppMode == "LIVE") SafeGreenDark else WatchAmberDark,
+                                    color = when {
+                                        !isLive -> WatchAmberDark
+                                        isLiveAvailable -> SafeGreenDark
+                                        isStale -> WatchAmberDark
+                                        else -> SevereRedDark
+                                    },
                                     letterSpacing = 0.6.sp
                                 )
                                 Text(
-                                    text = if (realTimeClock.isNotEmpty()) realTimeClock else "Live Feed Connected",
-                                    fontSize = 13.sp,
+                                    text = when {
+                                        !isLive -> "Demo Scenario Progression"
+                                        isLiveAvailable -> "Last updated: ${liveWeather?.lastUpdated}"
+                                        isStale && liveWeather != null -> "Cached from ${liveWeather?.lastUpdated} — refresh needed"
+                                        else -> "Unable to retrieve current forecast data. Retry or use Demo Scenario explicitly."
+                                    },
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
                                 )
@@ -213,12 +231,21 @@ fun HomeScreen(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Column(modifier = Modifier.padding(8.dp)) {
-                                    Text("Rain Rate", fontSize = 9.sp, color = TextMuted)
                                     Text(
-                                        text = "${String.format(Locale.ENGLISH, "%.1f", liveWeather?.rainfallMmHr ?: scenarioState.rainfallMmHr)} mm/h",
+                                        text = if (currentAppMode != "LIVE") "Rain Rate (DEMO)" else "Rain Rate (LIVE)",
+                                        fontSize = 9.sp,
+                                        color = TextMuted
+                                    )
+                                    val rainRateText = when {
+                                        currentAppMode != "LIVE" -> "${String.format(Locale.ENGLISH, "%.1f", scenarioState.rainfallMmHr)} mm/h"
+                                        liveWeather?.status == com.example.data.model.DataStatus.LIVE -> "${String.format(Locale.ENGLISH, "%.1f", liveWeather?.rainfallMmHr ?: 0.0)} mm/h"
+                                        else -> "Unavailable"
+                                    }
+                                    Text(
+                                        text = rainRateText,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.ExtraBold,
-                                        color = if ((liveWeather?.rainfallMmHr ?: scenarioState.rainfallMmHr) > 15.0) HighOrange else TextPrimary
+                                        color = if (currentAppMode != "LIVE") WatchAmberDark else if ((liveWeather?.rainfallMmHr ?: 0.0) > 15.0) HighOrange else TextPrimary
                                     )
                                 }
                             }
@@ -383,13 +410,32 @@ fun HomeScreen(
                         verticalAlignment = Alignment.Top
                     ) {
                         Column {
-                            Text(
-                                text = "CURRENT CRITICAL RISK",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextSecondary,
-                                letterSpacing = 0.8.sp
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "CURRENT CRITICAL RISK",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextSecondary,
+                                    letterSpacing = 0.8.sp
+                                )
+                                if (currentAppMode != "LIVE") {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = WatchAmberBg
+                                    ) {
+                                        Text(
+                                            text = "● DEMO SCENARIO",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = WatchAmber,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "${scenarioState.overallFloodRiskPercent}% ${scenarioState.overallRiskLevel.label} Risk",
@@ -546,10 +592,10 @@ fun HomeScreen(
                         icon = Icons.Default.Troubleshoot,
                         iconColor = DrainageCyan,
                         badgeLevel = when {
-                            scenarioState.drainageStressPercent > 80 -> RiskLevel.SEVERE
-                            scenarioState.drainageStressPercent > 60 -> RiskLevel.HIGH
-                            scenarioState.drainageStressPercent > 40 -> RiskLevel.WATCH
-                            else -> RiskLevel.SAFE
+                            scenarioState.drainageStressPercent > 75 -> RiskLevel.SEVERE
+                            scenarioState.drainageStressPercent > 50 -> RiskLevel.HIGH
+                            scenarioState.drainageStressPercent > 25 -> RiskLevel.MODERATE
+                            else -> RiskLevel.LOW
                         },
                         modifier = Modifier.weight(1f)
                     )
@@ -563,6 +609,27 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
+        }
+
+        // Explainable Flood Risk Section (Requirement 10: "WHY IS THIS LOCATION AT RISK?")
+        item {
+            val primeLocation = scenarioState.locations.maxByOrNull { it.currentRisk } ?: scenarioState.locations.firstOrNull()
+            if (primeLocation != null) {
+                val eval = viewModel.repository.riskEngine.evaluateLocationRisk(
+                    location = primeLocation,
+                    currentRainfallMmHr = scenarioState.rainfallMmHr,
+                    recentRainfall1hMm = scenarioState.rainfallMmHr * 0.8,
+                    rainfallDurationMin = 30,
+                    antecedent24hMm = scenarioState.antecedentRainfallMm,
+                    drainageStressPercent = scenarioState.drainageStressPercent,
+                    isDrainBottleneck = scenarioState.drainageStressPercent > 50
+                )
+                com.example.ui.components.ExplainableRiskCard(
+                    locationName = primeLocation.name,
+                    whyExplanation = eval.whyExplanation,
+                    modifier = Modifier.testTag("explainable_risk_card")
+                )
             }
         }
 
@@ -711,7 +778,7 @@ fun HomeScreen(
             Triple("SAFE NAVIGATION", "Fastest vs Safer route calculation", AppScreen.SAFE_NAV),
             Triple("LIVE ALERTS", "Active citizen warnings and severe hotspots", AppScreen.ALERTS),
             Triple("NOWCAST", "+15m, +30m, +60m, +120m probabilistic predictions", AppScreen.NOWCAST),
-            Triple("AUTHORITY DASHBOARD", "BBMP & Traffic Police decision-support mode", AppScreen.AUTHORITY),
+            Triple("AUTHORITY DASHBOARD", "Multi-agency coordination decision-support mode", AppScreen.AUTHORITY),
             Triple("DRAINAGE + RAINFALL", "Physical chain coupling visualization", AppScreen.DRAINAGE)
         )
 
@@ -760,6 +827,53 @@ fun HomeScreen(
                             contentDescription = "Go",
                             tint = BlueDark,
                             modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Final Limitations & Disclosures Section (Mandatory Requirement 17)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("home_prototype_limitations_card"),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, BorderSlate)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = TextMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "PROTOTYPE LIMITATIONS & DISCLOSURE",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextMuted,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    listOf(
+                        "Terrain and drainage layers currently use prototype/static GIS-derived data.",
+                        "Historical model validation requires verified ground-truth datasets.",
+                        "Road routing uses a prototype road network unless a live routing provider is connected.",
+                        "Short-term risk depends on forecast quality and prototype catchment parameters.",
+                        "Production deployment would require calibrated hydrological models, verified datasets, real-time sensors where available, and secure backend infrastructure."
+                    ).forEach { point ->
+                        Text(
+                            text = "• $point",
+                            fontSize = 10.sp,
+                            color = TextSecondary,
+                            lineHeight = 14.sp,
+                            modifier = Modifier.padding(vertical = 2.dp)
                         )
                     }
                 }

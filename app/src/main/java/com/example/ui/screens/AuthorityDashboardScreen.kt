@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.AltRoute
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,7 +55,7 @@ fun AuthorityDashboardScreen(
                 GovernmentActionItem(
                     location = "ORR EcoSpace Culvert (SWD-3)",
                     severity = RiskLevel.SEVERE,
-                    suggestedCheck = "Inspect nearby drainage inlet, clear debris at culverts, and position 50HP mobile dewatering pumps",
+                    suggestedCheck = "Recommended action: Inspect culvert inlet for debris clogging & position high-capacity mobile dewatering pumps",
                     agency = "BBMP Stormwater Drain (SWD) Dept",
                     priority = "CRITICAL"
                 )
@@ -65,7 +67,7 @@ fun AuthorityDashboardScreen(
                 GovernmentActionItem(
                     location = "Outer Ring Road (Ibblur to EcoSpace)",
                     severity = RiskLevel.HIGH,
-                    suggestedCheck = "Notify traffic-management team and prepare diversion signage via HSR 14th Main Ridge Bypass",
+                    suggestedCheck = "Recommended action: Prepare traffic diversion signage via HSR 14th Main Ridge Bypass",
                     agency = "Bengaluru Traffic Police (BTP)",
                     priority = "HIGH"
                 )
@@ -77,7 +79,7 @@ fun AuthorityDashboardScreen(
                 GovernmentActionItem(
                     location = "Agara Junction Underpass & Rainbow Drive",
                     severity = RiskLevel.SEVERE,
-                    suggestedCheck = "Deploy mobile dewatering pumps and issue public travel advisory / route diversion",
+                    suggestedCheck = "Recommended action: Deploy mobile dewatering pumps and broadcast public travel advisory",
                     agency = "KSDMA & BBMP Road Infrastructure",
                     priority = "IMMEDIATE"
                 )
@@ -88,8 +90,8 @@ fun AuthorityDashboardScreen(
             list.add(
                 GovernmentActionItem(
                     location = "Agara Lake & Bellandur Lake Outflow Sluices",
-                    severity = RiskLevel.WATCH,
-                    suggestedCheck = "Monitor retention pond / lake outflow weir levels and open emergency sluice gates",
+                    severity = RiskLevel.MODERATE,
+                    suggestedCheck = "Recommended action: Inspect lake outflow weir levels and buffer retention margins",
                     agency = "BBMP Lakes Division & BWSSB",
                     priority = "HIGH"
                 )
@@ -100,8 +102,8 @@ fun AuthorityDashboardScreen(
             list.add(
                 GovernmentActionItem(
                     location = "Bellandur–Agara Pilot Monitored Catchment",
-                    severity = RiskLevel.SAFE,
-                    suggestedCheck = "Routine monitoring of primary stormwater trunk drains and silt trap inspection",
+                    severity = RiskLevel.LOW,
+                    suggestedCheck = "Recommended action: Routine inspection of primary stormwater trunk drains and silt traps",
                     agency = "BBMP Ward 150 & 174",
                     priority = "ROUTINE"
                 )
@@ -183,7 +185,7 @@ fun AuthorityDashboardScreen(
                     title = "High-Risk Roads",
                     value = "$highRiskRoads",
                     subtitle = "$affectedRoadsCount total affected",
-                    icon = Icons.Default.AltRoute,
+                    icon = Icons.AutoMirrored.Filled.AltRoute,
                     iconColor = HighOrange,
                     modifier = Modifier.weight(1f)
                 )
@@ -196,17 +198,17 @@ fun AuthorityDashboardScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 MetricStatCard(
-                    title = "Water Level",
-                    value = if (scenarioState.drainageStressPercent > 70) "2.6m / 3.0m" else "1.4m / 3.0m",
-                    subtitle = "Bellandur Sluice Weir",
-                    icon = Icons.Default.ShowChart,
-                    iconColor = DrainageCyan,
+                    title = "Water Level Telemetry",
+                    value = "Not Connected",
+                    subtitle = "No live water-level telemetry connected",
+                    icon = Icons.AutoMirrored.Filled.ShowChart,
+                    iconColor = TextSecondary,
                     modifier = Modifier.weight(1f)
                 )
                 MetricStatCard(
                     title = "Model Confidence",
                     value = "$averageConfidence%",
-                    subtitle = "${scenarioState.activeAlerts.size} active alerts",
+                    subtitle = "${scenarioState.activeAlerts.size} active recommendations",
                     icon = Icons.Default.Verified,
                     iconColor = SafeGreen,
                     modifier = Modifier.weight(1f)
@@ -225,7 +227,7 @@ fun AuthorityDashboardScreen(
                     Icon(Icons.Default.Info, contentDescription = null, tint = CyanAccent, modifier = Modifier.size(22.dp))
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "DECISION SUPPORT MANDATE: Decision-support recommendation. Final operational decisions remain with authorities.",
+                        text = "DECISION SUPPORT MANDATE: Decision-support recommendations only. Prototype model does not dispatch field teams or directly notify municipal agencies.",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,
@@ -238,7 +240,7 @@ fun AuthorityDashboardScreen(
         // Prioritized Action Checklist
         item {
             Text(
-                text = "ACTIONABLE FIELD INTERVENTIONS",
+                text = "DECISION-SUPPORT RECOMMENDATIONS",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextSecondary,
@@ -290,7 +292,10 @@ fun AuthorityDashboardScreen(
                             )
                         }
 
-                        RiskBadge(level = act.severity, riskPercentage = if (act.severity == RiskLevel.SEVERE) 88 else (if (act.severity == RiskLevel.HIGH) 68 else 20))
+                        RiskBadge(
+                            level = act.severity,
+                            riskPercentage = if (act.severity == RiskLevel.SEVERE) 85 else (if (act.severity == RiskLevel.HIGH) 65 else (if (act.severity == RiskLevel.MODERATE) 38 else 15))
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -305,7 +310,7 @@ fun AuthorityDashboardScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Lead: ${act.agency}",
+                            text = "Suggested Coordination: ${act.agency}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = CyanAccent

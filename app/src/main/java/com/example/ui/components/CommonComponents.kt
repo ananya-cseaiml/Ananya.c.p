@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.view.View
 import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -48,8 +50,8 @@ fun RiskBadge(
     modifier: Modifier = Modifier
 ) {
     val (bgColor, textColor, borderCol) = when (level) {
-        RiskLevel.SAFE -> Triple(SafeGreenBg, SafeGreenDark, SafeGreenBorder)
-        RiskLevel.WATCH -> Triple(WatchAmberBg, WatchAmberDark, WatchAmberBorder)
+        RiskLevel.LOW -> Triple(SafeGreenBg, SafeGreenDark, SafeGreenBorder)
+        RiskLevel.MODERATE -> Triple(WatchAmberBg, WatchAmberDark, WatchAmberBorder)
         RiskLevel.HIGH -> Triple(HighOrangeBg, HighOrange, HighOrangeBorder)
         RiskLevel.SEVERE -> Triple(SevereRedBg, SevereRed, SevereRedBorder)
     }
@@ -69,6 +71,95 @@ fun RiskBadge(
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp
         )
+    }
+}
+
+@Composable
+fun ExplainableRiskCard(
+    locationName: String,
+    whyExplanation: com.example.data.model.WhyAtRiskExplanation?,
+    modifier: Modifier = Modifier
+) {
+    if (whyExplanation == null) return
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = NavySurface),
+        shape = RoundedCornerShape(16.dp),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = Brush.horizontalGradient(listOf(CyanAccent.copy(alpha = 0.6f), NavyBorder))
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "EXPLAINABLE FLOOD RISK",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CyanAccent,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    text = "Physics Grounded",
+                    fontSize = 10.sp,
+                    color = SkyRadar
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Why is $locationName at risk?",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = whyExplanation.primarySummary,
+                fontSize = 13.sp,
+                color = TextSecondary,
+                lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(color = NavyBorder)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Contributing Factor Badges
+            val factors = listOf(
+                "Rainfall" to whyExplanation.rainfallFactor,
+                "Runoff" to whyExplanation.runoffFactor,
+                "Terrain" to whyExplanation.terrainFactor,
+                "Flow Accumulation" to whyExplanation.flowAccFactor,
+                "Drainage Stress" to whyExplanation.drainageStressFactor,
+                "Historical Risk" to whyExplanation.historicalFactor
+            )
+
+            factors.forEach { (name, value) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = name,
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 12.sp,
+                        color = if (value.contains("SEVERE") || value.contains("HIGH")) HighOrange else SkyRadar,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -526,15 +617,12 @@ fun LeafletMapView(
     AndroidView(
         factory = { ctx ->
             WebView(ctx).apply {
-                setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                // Keep default LAYER_TYPE_NONE to avoid Mesa/RenderNode buffer allocation conflicts with Compose
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
-                    databaseEnabled = true
                     allowFileAccess = true
                     allowContentAccess = true
-                    allowFileAccessFromFileURLs = true
-                    allowUniversalAccessFromFileURLs = true
                     mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     cacheMode = WebSettings.LOAD_DEFAULT
                     userAgentString = "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36 FloodSafeBengaluru/1.0"
@@ -551,6 +639,10 @@ fun LeafletMapView(
                             val escaped = JSONObject.quote(routesJson)
                             view?.evaluateJavascript("if (window.displayRoutes) { window.displayRoutes($escaped); }", null)
                         }
+                    }
+
+                    override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                        super.onReceivedError(view, request, error)
                     }
 
                     override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
